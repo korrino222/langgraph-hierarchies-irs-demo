@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "langgraph-hierarchies-irs-demo"
+name = "langgraph-hierarchies-examples"
 version = "0.1.0"
-description = "Article companion: realistic IRS tax-prep demo built on langgraph-hierarchies"
+description = "Progressive langgraph-hierarchies examples: decomposability, responsibility, IRS capstone"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/korrino222/langgraph-hierarchies-irs-demo"
-Repository = "https://github.com/korrino222/langgraph-hierarchies-irs-demo"
+Homepage = "https://github.com/korrino222/langgraph-hierarchies-examples"
+Repository = "https://github.com/korrino222/langgraph-hierarchies-examples"
 Library = "https://github.com/korrino222/langgraph-hierarchies"
 
 [project.scripts]
@@ -30,7 +30,7 @@ irs-demo = "irs_demo.hierarchy:main"
 
 [tool.portfolio]
 owner = "korrino222"
-repo = "langgraph-hierarchies-irs-demo"
+repo = "langgraph-hierarchies-examples"
 status = "active"
 parent_library = "langgraph-hierarchies"
 
