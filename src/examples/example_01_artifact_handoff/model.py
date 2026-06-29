@@ -67,6 +67,57 @@ def build_fail_responses() -> list[AIMessage]:
     ]
 
 
+def build_llm_extractor_ok_responses() -> list[AIMessage]:
+    """Scripted responses for LLMExtractor + Formatter pipeline (invoice_ok.txt values)."""
+    artifact = json.dumps({
+        "status": "ok",
+        "vendor": "Meridian Strategy Partners LLC",
+        "amount": 87.50,
+        "date": "2024-03-15",
+        "category": "Business Development",
+    })
+    formatted = format_expense(json.loads(artifact))
+    card = formatted["card"]
+
+    return [
+        # root: delegate to extractor
+        _tool_call("extractor", _delegate_args("Extract fields from the invoice.")),
+        # extractor turn 1: extract fields → sets pipeline_artifact
+        _tool_call("report_extraction", {
+            "vendor": "Meridian Strategy Partners LLC",
+            "amount": 87.50,
+            "date": "2024-03-15",
+            "category": "Business Development",
+        }),
+        # extractor turn 2: report done → exits React loop
+        _tool_call("report_to_supervisor", {"report": artifact}),
+        # root: delegate to formatter
+        _tool_call("formatter", _delegate_args("Format the extracted expense artifact.")),
+        # root: finish
+        _tool_call("finish_task", {"result": card}),
+    ]
+
+
+def build_llm_extractor_fail_responses() -> list[AIMessage]:
+    """Scripted responses for LLMExtractor on invoice_fail.txt (amount illegible)."""
+    error_artifact = json.dumps({
+        "status": "error",
+        "stage": "extraction",
+        "reason": "amount not readable",
+    })
+
+    return [
+        # root: delegate to extractor
+        _tool_call("extractor", _delegate_args("Extract fields from the invoice.")),
+        # extractor turn 1: signal failure → sets pipeline_artifact to error artifact
+        _tool_call("report_extraction", {"error": "amount not readable"}),
+        # extractor turn 2: report done → exits React loop
+        _tool_call("report_to_supervisor", {"report": error_artifact}),
+        # root: finish with error artifact (no formatter call)
+        _tool_call("finish_task", {"result": error_artifact}),
+    ]
+
+
 class RuleBasedModel(BaseChatModel):
     """Deterministic model that pops pre-built tool-call responses."""
 
@@ -99,6 +150,14 @@ class RuleBasedModel(BaseChatModel):
     @classmethod
     def for_fail(cls) -> RuleBasedModel:
         return cls(responses=build_fail_responses())
+
+    @classmethod
+    def for_llm_extractor_ok(cls) -> RuleBasedModel:
+        return cls(responses=build_llm_extractor_ok_responses())
+
+    @classmethod
+    def for_llm_extractor_fail(cls) -> RuleBasedModel:
+        return cls(responses=build_llm_extractor_fail_responses())
 
 
 def create_openai_model(*, model: str = "gpt-4o-mini", temperature: float = 0):

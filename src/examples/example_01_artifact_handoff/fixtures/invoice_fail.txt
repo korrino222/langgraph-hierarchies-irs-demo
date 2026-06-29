@@ -1,0 +1,18 @@
+INVOICE
+
+From: Coastal Events Co.
+      88 Pier Avenue, Portland, OR 97201
+
+Billed To: Acme Corp
+           500 Main Street, Boston, MA 02108
+
+Invoice #: INV-2024-0315
+Date:      March 15, 2024
+
+Description                                        Amount
+----------------------------------------------------------
+Team dinner — planning offsite                [ILLEGIBLE]
+----------------------------------------------------------
+TOTAL DUE                              [SEE HANDWRITTEN NOTE]
+
+Category: Team Meals

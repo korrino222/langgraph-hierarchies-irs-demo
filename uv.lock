@@ -450,14 +450,26 @@ wheels = [
 
 [[package]]
 name = "langgraph-hierarchies"
-version = "0.0.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.0.3"
+source = { editable = "../2026-06-28-langgraph-hierarchies" }
 dependencies = [
     { name = "langgraph" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/40/ad/ce90d2600503ad9cebabb20d290b636584f034bd5694509bc362eb1f6d34/langgraph_hierarchies-0.0.2.tar.gz", hash = "sha256:c6c03b6b1406b6557e15470ce60f510ab6bf1eb0cf36f514ebf62139cd332b5d", size = 129117, upload-time = "2026-06-28T18:44:48.63Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/87/4d290881e73b4ebebf2b4cee2307a0aadf1efed72d08154f45c9abd26519/langgraph_hierarchies-0.0.2-py3-none-any.whl", hash = "sha256:8068c15cd953b383041a05a4a3b21fd0be683ed6a2724baafba64cf53556c1df", size = 19879, upload-time = "2026-06-28T18:44:47.417Z" },
+
+[package.metadata]
+requires-dist = [{ name = "langgraph", specifier = ">=1.2.6,<2.0.0" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pre-commit", specifier = ">=4.0" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov" },
+    { name = "ruff", specifier = ">=0.9" },
+]
+lint = [{ name = "ruff", specifier = ">=0.9" }]
+test = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov" },
 ]
 
 [[package]]
@@ -494,7 +506,7 @@ requires-dist = [
     { name = "faker", specifier = ">=37.0" },
     { name = "langchain-openai", specifier = ">=0.3" },
     { name = "langgraph", specifier = "==1.2.6" },
-    { name = "langgraph-hierarchies", specifier = "==0.0.2" },
+    { name = "langgraph-hierarchies", editable = "../2026-06-28-langgraph-hierarchies" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pillow", specifier = ">=11.0" },
     { name = "python-dateutil", specifier = ">=2.9" },

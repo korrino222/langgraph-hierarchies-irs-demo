@@ -4,7 +4,18 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import Annotated, Any
+from uuid import uuid4
+
+from langchain_core.messages import ToolMessage
+from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
+from langgraph.types import Command
+
+try:
+    from langchain_core.tools import InjectedToolCallId
+except ImportError:
+    from langgraph.prebuilt import InjectedToolCallId  # type: ignore[no-redef]
 
 _AMOUNT_RE = re.compile(r"\$?\s*([\d,]+\.\d{2})")
 _DATE_RE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
@@ -92,3 +103,40 @@ def extraction_status(artifact_json: str) -> str:
         return json.loads(artifact_json).get("status", "error")
     except json.JSONDecodeError:
         return "error"
+
+
+@tool
+def report_extraction(
+    state: Annotated[dict, InjectedState],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    vendor: str = "",
+    amount: float = 0.0,
+    date: str = "",
+    category: str = "",
+    error: str = "",
+) -> Command:
+    """Report extraction result as a structured artifact.
+
+    On success provide vendor, amount (float), date (YYYY-MM-DD), and category.
+    On failure set error to a brief reason instead.
+    Call exactly once.
+    """
+    if error:
+        artifact = json.dumps({"status": "error", "stage": "extraction", "reason": error})
+    else:
+        artifact = json.dumps({
+            "status": "ok",
+            "vendor": vendor,
+            "amount": amount,
+            "date": date,
+            "category": category,
+        })
+    return Command(
+        update={
+            "current_agent_report": artifact,
+            "pipeline_artifact": artifact,
+            "messages": [
+                ToolMessage(content=artifact, tool_call_id=tool_call_id, id=str(uuid4()))
+            ],
+        }
+    )

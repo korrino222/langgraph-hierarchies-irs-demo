@@ -1,0 +1,22 @@
+INVOICE
+
+From: Meridian Strategy Partners LLC
+      1420 Harbor Blvd, Suite 900
+      San Francisco, CA 94105
+
+Billed To: Acme Corp
+           500 Main Street, Boston, MA 02108
+
+Invoice #: INV-2024-0892
+Date:      March 15, 2024
+Due Date:  April 14, 2024
+
+Description                                        Amount
+----------------------------------------------------------
+Business development advisory session              $75.00
+Travel coordination & logistics fee                $12.50
+----------------------------------------------------------
+TOTAL DUE                                          $87.50
+
+Category: Business Development
+Payment Terms: Net 30 days

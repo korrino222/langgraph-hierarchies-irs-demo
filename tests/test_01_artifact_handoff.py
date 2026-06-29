@@ -14,6 +14,7 @@ from langgraph_hierarchies.state.schema import create_base_state_defaults
 from examples.example_01_artifact_handoff.agents import (
     EXTRACTOR_GOAL,
     FORMATTER_GOAL,
+    LLMExtractor,
     child_graph,
     compile_formatter,
     compile_root,
@@ -152,6 +153,32 @@ def test_parse_and_format_tools() -> None:
     assert "XYZ Consulting" in formatted["card"]
 
 
+def test_extractor_uses_raw_input_when_delegate_args_empty() -> None:
+    root = compile_root()
+    extractor = child_graph(root, "extractor")
+    raw = load_raw_text("raw_ok.txt")
+
+    child_input = {
+        **create_base_state_defaults(),
+        "raw_input": raw,
+        "current_agent_args": {},
+        "current_tool_call": {
+            "name": "extractor",
+            "args": {},
+            "id": "call-extractor",
+            "type": "tool_call",
+        },
+    }
+
+    entered = extractor.entry_hook(child_input)
+    child_output = extractor.invoke(entered)
+    restored = extractor.exit_hook(child_output)
+
+    extraction = json.loads(restored["pipeline_artifact"])
+    assert extraction["status"] == "ok"
+    assert extraction["vendor"] == "XYZ Consulting"
+
+
 def test_subchain_policy_on_extractor() -> None:
     from examples.example_01_artifact_handoff.agents import Extractor
 
@@ -165,12 +192,18 @@ def test_subchain_policy_on_extractor() -> None:
     assert "pipeline_artifact" in extractor.subchain_policy.merge_fields
 
 
-def test_build_run_config_includes_tags() -> None:
+def test_build_run_config_includes_tags_and_thread() -> None:
     from examples.example_01_artifact_handoff.tracing import build_run_config
 
-    config = build_run_config(run_name="example-01-scripted-ok", tags=["scripted-ok"])
+    config = build_run_config(
+        thread_id="test-thread-1",
+        run_name="example-01-scripted-ok",
+        tags=["scripted-ok"],
+    )
     assert config["run_name"] == "example-01-scripted-ok"
     assert config["tags"] == ["example-01", "scripted-ok"]
+    assert config["metadata"]["thread_id"] == "test-thread-1"
+    assert config["configurable"]["thread_id"] == "test-thread-1"
 
 
 def test_create_openai_model_requires_api_key(monkeypatch) -> None:
@@ -179,3 +212,53 @@ def test_create_openai_model_requires_api_key(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
         create_openai_model()
+
+
+def test_llm_extractor_ok_pipeline_scripted() -> None:
+    """LLMExtractor pipeline succeeds with scripted model (invoice_ok.txt values)."""
+    from examples.example_01_artifact_handoff.model import RuleBasedModel
+
+    root = compile_root(use_llm_extractor=True)
+    context = BaseContext(model=RuleBasedModel.for_llm_extractor_ok())
+    result = root.invoke(
+        create_base_state_defaults(),
+        config=RunnableConfig(recursion_limit=50),
+        context=context,
+    )
+
+    artifact = _formatter_output_from_pipeline(result)
+    assert artifact["status"] == "ok"
+    assert artifact["card"] == "Meridian Strategy Partners LLC | $87.50 | 2024-03-15 | Business Development"
+
+
+def test_llm_extractor_fail_pipeline_scripted() -> None:
+    """LLMExtractor pipeline produces structured error when invoice amount is unreadable."""
+    from examples.example_01_artifact_handoff.model import RuleBasedModel
+
+    root = compile_root(use_llm_extractor=True)
+    context = BaseContext(model=RuleBasedModel.for_llm_extractor_fail())
+    result = root.invoke(
+        create_base_state_defaults(),
+        config=RunnableConfig(recursion_limit=50),
+        context=context,
+    )
+
+    artifact = _formatter_output_from_pipeline(result)
+    assert artifact["status"] == "error"
+    assert artifact["stage"] == "extraction"
+
+    tool_names = _tool_names_in_messages(result.get("messages", []))
+    assert "formatter" not in tool_names
+
+
+def test_subchain_policy_on_llm_extractor() -> None:
+    from examples.example_01_artifact_handoff.agents import LLMExtractor
+
+    extractor = LLMExtractor(
+        state_schema=HandoffState,
+        context_schema=BaseContext,
+        subchain_policy=ARTIFACT_POLICY,
+    ).compile_graph()
+    assert extractor.subchain_policy is not None
+    assert extractor.subchain_policy.clear_messages is True
+    assert "pipeline_artifact" in extractor.subchain_policy.merge_fields

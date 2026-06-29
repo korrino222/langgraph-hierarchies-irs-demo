@@ -34,6 +34,8 @@ uv run ruff check .
 uv run pytest -m "not llm"
 ```
 
+Requires **`langgraph-hierarchies>=0.0.3`** (PyPI) for LangSmith thread propagation via `build_invoke_config`.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).

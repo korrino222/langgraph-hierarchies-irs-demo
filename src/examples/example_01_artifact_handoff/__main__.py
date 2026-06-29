@@ -27,13 +27,14 @@ from examples.example_01_artifact_handoff.tracing import (
     apply_project_override,
     build_run_config,
     load_env,
+    new_thread_id,
     print_tracing_hint,
 )
 
 _FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
-def _print_boundary_demo(compiled_root: Any) -> None:
+def _print_boundary_demo(compiled_root: Any, *, config: Any) -> None:
     extractor = child_graph(compiled_root, "extractor")
     parent = create_base_state_defaults()
     parent["messages"] = [HumanMessage(content="upstream history must not leak")]
@@ -58,7 +59,7 @@ def _print_boundary_demo(compiled_root: Any) -> None:
     print(f"[Extractor] entered: {len(entered.get('messages', []))} messages")
     print(f"[Extractor] goal:      \"{EXTRACTOR_GOAL}\"")
 
-    child_output = extractor.invoke(entered)
+    child_output = extractor.invoke(entered, config=config)
     restored = extractor.exit_hook(child_output)
     print(
         "[Root]      parent messages after Extractor: "
@@ -90,9 +91,10 @@ def _print_result(result: dict, *, replay: bool = False) -> None:
 def _llm_initial_state(raw_fixture: str) -> dict:
     raw_text = load_raw_text(raw_fixture)
     state = create_base_state_defaults()
+    state["raw_input"] = raw_text
     state["current_agent_args"] = {
         "task": (
-            "Process this expense note through extraction and formatting.\n\n"
+            "Process this invoice through extraction and formatting.\n\n"
             f"{raw_text}"
         ),
         "task_scope": (
@@ -110,29 +112,32 @@ def run_pipeline(
     ok: bool,
     use_llm: bool,
     project: str | None,
+    thread_id: str,
 ) -> dict:
     mode = "llm-ok" if use_llm and ok else "llm-fail" if use_llm else "scripted-ok" if ok else "scripted-fail"
     project_name = apply_project_override(project)
     config = build_run_config(
+        thread_id=thread_id,
         run_name=f"example-01-{mode}",
         tags=[mode],
     )
 
-    root = compile_root()
+    root = compile_root(use_llm_extractor=use_llm)
     if use_llm:
-        context = BaseContext(model=create_openai_model())
-        raw_fixture = "raw_ok.txt" if ok else "raw_fail.txt"
+        context = BaseContext(thread_id=thread_id, model=create_openai_model())
+        raw_fixture = "invoice_ok.txt" if ok else "invoice_fail.txt"
         state = _llm_initial_state(raw_fixture)
     else:
         context = BaseContext(
-            model=RuleBasedModel.for_ok() if ok else RuleBasedModel.for_fail()
+            thread_id=thread_id,
+            model=RuleBasedModel.for_ok() if ok else RuleBasedModel.for_fail(),
         )
         state = create_base_state_defaults()
 
     print("[Root]      pipeline started")
-    print_tracing_hint(project_name)
+    print_tracing_hint(project_name, thread_id)
     if ok and not use_llm:
-        _print_boundary_demo(root)
+        _print_boundary_demo(root, config=config)
 
     result = root.invoke(state, config=config, context=context)
 
@@ -142,9 +147,10 @@ def run_pipeline(
     return result
 
 
-def run_replay(fixture_path: Path, *, project: str | None) -> dict:
+def run_replay(fixture_path: Path, *, project: str | None, thread_id: str) -> dict:
     project_name = apply_project_override(project)
     config = build_run_config(
+        thread_id=thread_id,
         run_name="example-01-replay",
         tags=["replay"],
         recursion_limit=20,
@@ -156,7 +162,7 @@ def run_replay(fixture_path: Path, *, project: str | None) -> dict:
     state = create_base_state_defaults()
     state["pipeline_artifact"] = artifact_text
 
-    print_tracing_hint(project_name)
+    print_tracing_hint(project_name, thread_id)
     result = formatter.invoke(state, config=config)
     _print_result(result, replay=True)
     return result
@@ -199,17 +205,18 @@ def main(argv: list[str] | None = None) -> None:
         help="Override LANGCHAIN_PROJECT for LangSmith (default: langgraph-hierarchies-examples-01)",
     )
     args = parser.parse_args(argv)
+    thread_id = new_thread_id()
 
     if args.scripted_ok:
-        run_pipeline(ok=True, use_llm=False, project=args.project)
+        run_pipeline(ok=True, use_llm=False, project=args.project, thread_id=thread_id)
     elif args.scripted_fail:
-        run_pipeline(ok=False, use_llm=False, project=args.project)
+        run_pipeline(ok=False, use_llm=False, project=args.project, thread_id=thread_id)
     elif args.llm_ok:
-        run_pipeline(ok=True, use_llm=True, project=args.project)
+        run_pipeline(ok=True, use_llm=True, project=args.project, thread_id=thread_id)
     elif args.llm_fail:
-        run_pipeline(ok=False, use_llm=True, project=args.project)
+        run_pipeline(ok=False, use_llm=True, project=args.project, thread_id=thread_id)
     elif args.replay:
-        run_replay(args.replay, project=args.project)
+        run_replay(args.replay, project=args.project, thread_id=thread_id)
 
 
 if __name__ == "__main__":

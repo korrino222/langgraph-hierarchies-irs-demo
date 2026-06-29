@@ -12,3 +12,4 @@ class HandoffState(BaseState):
     """Extended state carrying structured artifacts between pipeline stages."""
 
     pipeline_artifact: Annotated[str, reduce_current_agent_report]
+    raw_input: str
