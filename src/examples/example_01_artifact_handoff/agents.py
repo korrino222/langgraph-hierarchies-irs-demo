@@ -21,6 +21,14 @@ from examples.example_01_artifact_handoff.tools import (
 
 EXTRACTOR_GOAL = "Extract structured expense fields from raw text."
 FORMATTER_GOAL = "Format a structured expense artifact into a card."
+ROOT_LLM_SYSTEM = (
+    "You orchestrate a two-stage expense pipeline using extractor and formatter "
+    "subgraph tools.\n"
+    "1. Call extractor with the raw expense note in the task.\n"
+    "2. If the extraction artifact JSON has status ok, call formatter.\n"
+    "3. Call finish_task with the formatted card text, or the error artifact JSON.\n"
+    "Call exactly one tool per step."
+)
 
 
 def _task_text(state: dict) -> str:
@@ -97,9 +105,7 @@ def compile_root() -> Any:
         state_schema=HandoffState,
         context_schema=BaseContext,
         reports_to_supervisor=False,
-        message_system=(
-            "Orchestrate expense extraction, then formatting when extraction succeeds."
-        ),
+        message_system=ROOT_LLM_SYSTEM,
         message_reasoning="Which unit should run next?",
     )
     return root.compile_as_root(state_defaults=create_base_state_defaults())

@@ -9,13 +9,16 @@ Progressive runnable examples for [`langgraph-hierarchies`](https://github.com/k
 ```bash
 git clone https://github.com/korrino222/langgraph-hierarchies-examples.git
 cd langgraph-hierarchies-examples
-cp .env.example .env   # optional: OPENAI_API_KEY for --llm runs
+cp .env.example .env   # optional: OPENAI_API_KEY, LANGCHAIN_API_KEY
 uv sync
+uv run python -m examples.example_01_artifact_handoff --scripted-ok
 ```
+
+See [DESIGN.md](./DESIGN.md) for `--llm-ok`, `--replay`, and LangSmith tracing.
 
 ## Status
 
-Repository scaffold only — examples not yet implemented. See [DESIGN.md](./DESIGN.md) (coming) for exhibit notes.
+Example **01 — Artifact handoff** is implemented. See [DESIGN.md](./DESIGN.md) for run modes, LangSmith tracing, and article mapping. Examples 02–04 are planned.
 
 Planned example ladder:
 

@@ -163,3 +163,19 @@ def test_subchain_policy_on_extractor() -> None:
     assert extractor.subchain_policy is not None
     assert extractor.subchain_policy.clear_messages is True
     assert "pipeline_artifact" in extractor.subchain_policy.merge_fields
+
+
+def test_build_run_config_includes_tags() -> None:
+    from examples.example_01_artifact_handoff.tracing import build_run_config
+
+    config = build_run_config(run_name="example-01-scripted-ok", tags=["scripted-ok"])
+    assert config["run_name"] == "example-01-scripted-ok"
+    assert config["tags"] == ["example-01", "scripted-ok"]
+
+
+def test_create_openai_model_requires_api_key(monkeypatch) -> None:
+    from examples.example_01_artifact_handoff.model import create_openai_model
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        create_openai_model()

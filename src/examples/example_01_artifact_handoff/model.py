@@ -99,3 +99,16 @@ class RuleBasedModel(BaseChatModel):
     @classmethod
     def for_fail(cls) -> RuleBasedModel:
         return cls(responses=build_fail_responses())
+
+
+def create_openai_model(*, model: str = "gpt-4o-mini", temperature: float = 0):
+    """Return a ChatOpenAI model for root orchestration (--llm-* modes)."""
+    import os
+
+    if not os.getenv("OPENAI_API_KEY"):
+        msg = "OPENAI_API_KEY is required for --llm-ok / --llm-fail"
+        raise RuntimeError(msg)
+
+    from langchain_openai import ChatOpenAI
+
+    return ChatOpenAI(model=model, temperature=temperature)
