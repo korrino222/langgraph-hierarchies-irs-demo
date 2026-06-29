@@ -25,9 +25,6 @@ Homepage = "https://github.com/korrino222/langgraph-hierarchies-examples"
 Repository = "https://github.com/korrino222/langgraph-hierarchies-examples"
 Library = "https://github.com/korrino222/langgraph-hierarchies"
 
-[project.scripts]
-irs-demo = "irs_demo.hierarchy:main"
-
 [tool.portfolio]
 owner = "korrino222"
 repo = "langgraph-hierarchies-examples"
@@ -50,7 +47,7 @@ dev = [
 default-groups = ["dev"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/irs_demo"]
+packages = ["src/examples"]
 
 [tool.ruff]
 line-length = 88

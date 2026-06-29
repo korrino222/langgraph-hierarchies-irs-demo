@@ -1,0 +1,1 @@
+"""Example 01 — artifact handoff (two agents, pipeline_artifact only)."""
